@@ -21,7 +21,7 @@ from report import (
     build_specific_attendance_report,
 )
 
-
+       #UI
 class SmartAttendanceAnalyzerApp:
     def __init__(self, root: tk.Tk):
         self.root = root
@@ -174,6 +174,7 @@ class SmartAttendanceAnalyzerApp:
         self.output_text = tk.Text(output_frame, height=10, wrap="word", font=("Courier", 11))
         self.output_text.pack(fill="both", expand=True)
 
+     #Records the attendance data and updates the UI accordingly
     def add_record(self):
         student = self.student_entry.get().strip()
         subject = self.subject_entry.get().strip()
@@ -227,14 +228,16 @@ class SmartAttendanceAnalyzerApp:
 
         self._refresh_table()
         self.clear_inputs()
+        self.save_to_csv()
 
+     #To clear the input fields after adding a record.
     def clear_inputs(self):
         for widget in [self.student_entry, self.subject_entry, self.attended_entry, self.total_entry]:
             widget.delete(0, tk.END)
 
         self.target_entry.delete(0, tk.END)
         self.target_entry.insert(0, "75")
-
+     #To delete a record.
     def delete_selected(self):
         selected = self.tree.selection()
         if not selected:
@@ -306,13 +309,13 @@ class SmartAttendanceAnalyzerApp:
         G = nx.Graph()
         subject_to_eligible_students = defaultdict(list)
 
-     # Step 1: collect eligible students per subject
+     #Eligible students per subject
         for rec in self.records:
             percentage = attendance_percentage(rec["attended"], rec["total"])
             if percentage >= 75:
                 subject_to_eligible_students[rec["subject"]].append(rec["student"])
 
-     # Step 2: add nodes and edges
+     #nodes and edges(Students and attendance co-relations)
         for subject, students in subject_to_eligible_students.items():
            students = list(set(students))
 
@@ -323,7 +326,7 @@ class SmartAttendanceAnalyzerApp:
             for j in range(i + 1, len(students)):
                 G.add_edge(students[i], students[j])
 
-     # Step 3: draw graph
+     #draw graph
         plt.figure(figsize=(10, 7))
         pos = nx.spring_layout(G)
 
@@ -339,7 +342,7 @@ class SmartAttendanceAnalyzerApp:
         plt.title("Student Attendance Graph")
         plt.show()
 
-
+      #exports the attendance records to a CSV file.
     def export_csv(self):
         if not self.records:
             messagebox.showinfo("Export", "No records to export.")
@@ -367,7 +370,7 @@ class SmartAttendanceAnalyzerApp:
         except Exception as e:
             messagebox.showerror("Export Error", str(e))
 
-
+     #imports attendance records from a CSV file.
     def import_csv(self):
         file_path = filedialog.askopenfilename(
             filetypes=[("CSV files", "*.csv")],
@@ -401,6 +404,7 @@ class SmartAttendanceAnalyzerApp:
         except Exception as e:
             messagebox.showerror("Import Error", str(e))
     
+     #To show specific attendance details for a student and optionally for a specific subject.
     def show_specific_attendance(self):
         student_name = self.search_student_entry.get().strip()
         subject_name = self.search_subject_entry.get().strip()
@@ -418,3 +422,15 @@ class SmartAttendanceAnalyzerApp:
         subject_name
     )
         self.write_output(report)
+      #Saves the newly added data to the CSV file.
+    def save_to_csv(self):
+        try:
+            with open("data.csv", "w", newline="", encoding="utf-8") as file:
+                writer = csv.DictWriter(
+                file,
+                fieldnames=["student", "subject", "attended", "total", "target"]
+            )
+            writer.writeheader()
+            writer.writerows(self.records)
+        except Exception as e:
+            messagebox.showerror("Save Error", str(e))
